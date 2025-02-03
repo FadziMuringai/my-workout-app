@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Workout Planner & Food Recommendation</title>
+  <!-- Google Font for a modern look -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    /* Base styling */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 30px;
+    }
+    h1, h2, h3 {
+      text-align: center;
+      color: #444;
+      margin-bottom: 20px;
+    }
+    /* Form groups for consistent spacing */
+    .form-group {
+      margin-bottom: 15px;
+    }
+    form label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: block;
+    }
+    input, select, button, textarea {
+      font-size: 16px;
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+    }
+    input, select, textarea {
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      transition: all 0.3s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #5563DE;
+      box-shadow: 0 0 8px rgba(85, 99, 222, 0.5);
+    }
+    button {
+      background: #5563DE;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      padding: 12px;
+    }
+    button:hover {
+      background: #4452b0;
+    }
+    .hint {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: -10px;
+      margin-bottom: 10px;
+    }
+    fieldset {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      padding: 10px;
+    }
+    fieldset legend {
+      font-weight: bold;
+      padding: 0 5px;
+    }
+    /* Health Concerns styling using flex */
+    .health-concerns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+    }
+    .checkbox-group input[type="checkbox"] {
+      margin-right: 5px;
+    }
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f7f7f7;
+      border-radius: 8px;
+      animation: fadeIn 1s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #5563DE;
+      color: #fff;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+    tr:hover {
+      background: #e0e0e0;
+      transition: background 0.3s;
+    }
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    /* Custom tooltip styling for meal items */
+    .meal {
+      position: relative;
+      border-bottom: 1px dotted #888;
+      cursor: help;
+    }
+    .meal::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 125%; /* Position above the element */
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      color: #000;
+      font-size: 16px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      text-align: left;
+      width: 250px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease-in-out;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .meal:hover::after {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Workout & Food Planner</h1>
+    <form id="plannerForm">
+      <!-- Basic Personal Information -->
+      <div class="form-group">
+        <label for="age">Age:</label>
+        <input type="number" id="age" name="age" required />
+      </div>
+      <div class="form-group">
+        <label for="gender">Gender:</label>
+        <select id="gender" name="gender" required>
+          <option value="" disabled selected>Select your gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <!-- Height -->
+      <div class="form-group">
+        <label for="height">Height (e.g., 5'11 or 6):</label>
+        <input type="text" id="height" name="height" placeholder="5'11 or 6" required />
+        <div class="hint">Enter your height in feet and optional inches using a single quote (').</div>
+      </div>
+      <!-- Weight and Goal -->
+      <div class="form-group">
+        <label for="weight">Current Weight (in lbs):</label>
+        <input type="number" id="weight" name="weight" required />
+      </div>
+      <div class="form-group">
+        <label for="goalWeight">Goal Weight (in lbs):</label>
+        <input type="number" id="goalWeight" name="goalWeight" required />
+        <div class="hint">Enter the weight you want to achieve.</div>
+      </div>
+      <!-- Preferred Diet -->
+      <div class="form-group">
+        <label for="preferredDiet">Preferred Diet:</label>
+        <select id="preferredDiet" name="preferredDiet" required>
+          <option value="" disabled selected>Select your preferred diet</option>
+          <option value="Standard">Standard American Diet</option>
+          <option value="Mediterranean">Mediterranean Diet</option>
+          <option value="Low-Carb">Low-Carb Diet</option>
+          <option value="Keto">Keto Diet</option>
+          <option value="Paleo">Paleo Diet</option>
+          <option value="Vegetarian">Vegetarian</option>
+          <option value="Vegan">Vegan</option>
+          <option value="Gluten-Free">Gluten-Free</option>
+          <option value="DASH">DASH Diet</option>
+          <option value="Whole30">Whole30</option>
+        </select>
+      </div>
+      <!-- Health Concerns -->
+      <fieldset>
+        <legend>Health Concerns (optional):</legend>
+        <div class="health-concerns">
+          <div class="checkbox-group">
+            <input type="checkbox" id="diabetes" name="healthConcerns" value="Diabetes">
+            <label for="diabetes">Diabetes</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="highBP" name="healthConcerns" value="High Blood Pressure">
+            <label for="highBP">High Blood Pressure</label>
+          </div>
+        </div>
+      </fieldset>
+      <!-- Lifestyle & Exercise Habits -->
+      <fieldset>
+        <legend>Lifestyle & Exercise Habits</legend>
+        <div class="form-group">
+          <label for="exerciseFrequency">Exercise Frequency (days per week):</label>
+          <!-- Exercise Frequency as a drop-down -->
+          <select id="exerciseFrequency" name="exerciseFrequency" required>
+            <option value="" disabled selected>Select days per week</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="exerciseLevel">Exercise Level:</label>
+          <select id="exerciseLevel" name="exerciseLevel" required>
+            <option value="" disabled selected>Select your exercise level</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sleepHours">Average Sleep Hours per Night:</label>
+          <input type="number" id="sleepHours" name="sleepHours" step="0.5" required />
+        </div>
+        <div class="form-group">
+          <label for="stressLevel">Stress Level:</label>
+          <select id="stressLevel" name="stressLevel" required>
+            <option value="" disabled selected>Select your stress level</option>
+            <option value="low">Low</option>
+            <option value="moderate">Moderate</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </fieldset>
+      <!-- Medical History -->
+      <fieldset>
+        <legend>Medical History</legend>
+        <div class="form-group">
+          <label for="medicalHistory">Please list any injuries, surgeries, or chronic conditions (optional):</label>
+          <textarea id="medicalHistory" name="medicalHistory" rows="3" placeholder="e.g., knee surgery in 2019, chronic lower back pain"></textarea>
+        </div>
+      </fieldset>
+      <button type="submit">Submit</button>
+    </form>
+
+    <div id="result" class="result" style="display: none;"></div>
+  </div>
+
+  <script>
+    // Listen for form submission
+    document.getElementById('plannerForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // Prevent form refresh
+
+      // Retrieve basic form values
+      const age = parseInt(document.getElementById('age').value);
+      const gender = document.getElementById('gender').value;
+      const heightInput = document.getElementById('height').value.trim();
+      const weightLbs = parseFloat(document.getElementById('weight').value);
+      const goalWeight = parseFloat(document.getElementById('goalWeight').value);
+      const preferredDiet = document.getElementById('preferredDiet').value;
+      
+      // Retrieve health concerns
+      const healthConcernElements = document.querySelectorAll('input[name="healthConcerns"]:checked');
+      const healthConcerns = Array.from(healthConcernElements).map(el => el.value);
+
+      // Retrieve lifestyle & medical info
+      const exerciseFrequency = parseInt(document.getElementById('exerciseFrequency').value);
+      const exerciseLevel = document.getElementById('exerciseLevel').value;
+      const sleepHours = parseFloat(document.getElementById('sleepHours').value);
+      const stressLevel = document.getElementById('stressLevel').value;
+      const medicalHistory = document.getElementById('medicalHistory').value.trim();
+
+      // Parse height (formats like 5'11 or 6)
+      const regex = /^(\d+)(?:['’](\d{1,2}))?$/;
+      const match = regex.exec(heightInput);
+      if (!match) {
+        alert("Please enter your height in a valid format, e.g., 5'11 or 6");
+        return;
+      }
+      const feet = parseInt(match[1]);
+      const inches = match[2] ? parseInt(match[2]) : 0;
+      const totalInches = (feet * 12) + inches;
+      const heightM = totalInches * 0.0254;
+
+      // Convert weight to kg and calculate BMI
+      const weightKg = weightLbs * 0.45359237;
+      const bmi = weightKg / (heightM * heightM);
+      const bmiRounded = bmi.toFixed(1);
+
+      // Determine BMI Category
+      let bmiCategory = "";
+      if (bmi < 18.5) {
+        bmiCategory = "Underweight";
+      } else if (bmi < 25) {
+        bmiCategory = "Normal weight";
+      } else if (bmi < 30) {
+        bmiCategory = "Overweight";
+      } else {
+        bmiCategory = "Obese";
+      }
+
+      // Calculate BMR (Harris-Benedict Equation)
+      let bmr = 0;
+      if (gender === "male") {
+        bmr = 66 + (6.23 * weightLbs) + (12.7 * totalInches) - (6.8 * age);
+      } else if (gender === "female") {
+        bmr = 655 + (4.35 * weightLbs) + (4.7 * totalInches) - (4.7 * age);
+      } else {
+        const bmrMale = 66 + (6.23 * weightLbs) + (12.7 * totalInches) - (6.8 * age);
+        const bmrFemale = 655 + (4.35 * weightLbs) + (4.7 * totalInches) - (4.7 * age);
+        bmr = (bmrMale + bmrFemale) / 2;
+      }
+      const maintenanceCalories = bmr * 1.2; // Sedentary multiplier
+
+      // Determine goal result based on current weight and goal weight
+      let planType = "";
+      let recommendedCalories = 0;
+      let weeklyPlan = [];
+      const diff = goalWeight - weightLbs;
+      if (Math.abs(diff) < 1) {
+        // Maintenance if the difference is less than 1 lb
+        planType = "maintenance";
+        recommendedCalories = Math.round(maintenanceCalories);
+        // Sample Maintenance weekly plan
+        weeklyPlan = [
+          { day: "Monday", 
+            workout: `<ul>
+              <li>Warm-up: 10 min jog</li>
+              <li>Push-ups: 3 sets of 12 reps</li>
+              <li>Dumbbell Rows: 3 sets of 10 reps per arm</li>
+              <li>Squats: 3 sets of 15 reps</li>
+              <li>Plank: 3 x 1 minute</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> <span class="meal" data-tooltip="Recipe: Cook ½ cup oats; top with ½ cup mixed berries and 10 almonds.">Oatmeal with berries (~350 cal)</span></li>
+              <li><strong>Lunch:</strong> <span class="meal" data-tooltip="Recipe: Grill 120g chicken and serve over 2 cups mixed greens with ¼ cup quinoa.">Chicken salad (~500 cal)</span></li>
+              <li><strong>Snack:</strong> <span class="meal" data-tooltip="Recipe: Slice one medium apple and serve with 1 tbsp almond butter.">Apple with almond butter (~200 cal)</span></li>
+              <li><strong>Dinner:</strong> <span class="meal" data-tooltip="Recipe: Bake 150g salmon; serve with ½ cup brown rice and 1 cup steamed broccoli.">Baked salmon dinner (~600 cal)</span></li>
+            </ul>` 
+          },
+          { day: "Tuesday", 
+            workout: `<ul>
+              <li>Warm-up: 10 min brisk walk</li>
+              <li>Incline Dumbbell Press: 3 sets of 12 reps</li>
+              <li>Leg Curls: 3 sets of 15 reps</li>
+              <li>Seated Row: 3 sets of 12 reps</li>
+              <li>Plank: 3 x 1 minute</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> <span class="meal" data-tooltip="Recipe: Combine 1 cup Greek yogurt with 1 tbsp honey and ½ cup granola.">Greek yogurt parfait (~350 cal)</span></li>
+              <li><strong>Lunch:</strong> <span class="meal" data-tooltip="Recipe: Use 100g turkey, avocado slices, and lettuce wrapped in a whole wheat tortilla.">Turkey &amp; avocado wrap (~500 cal)</span></li>
+              <li><strong>Snack:</strong> <span class="meal" data-tooltip="Recipe: 1 cup carrot sticks served with 2 tbsp hummus.">Carrot sticks with hummus (~150 cal)</span></li>
+              <li><strong>Dinner:</strong> <span class="meal" data-tooltip="Recipe: Grill 100g shrimp and serve with 1 cup quinoa and mixed vegetables.">Grilled shrimp dinner (~600 cal)</span></li>
+            </ul>` 
+          },
+          { day: "Wednesday", 
+            workout: `<ul>
+              <li>Warm-up: 10 min cycling</li>
+              <li>Bodyweight Squats: 3 sets of 15 reps</li>
+              <li>Push-ups: 3 sets of 12 reps</li>
+              <li>Dumbbell Shoulder Press: 3 sets of 12 reps</li>
+              <li>Plank: 3 x 1 minute</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> <span class="meal" data-tooltip="Recipe: Blend 1 banana, 1 cup spinach, and 1 scoop protein powder with water.">Protein smoothie (~300 cal)</span></li>
+              <li><strong>Lunch:</strong> <span class="meal" data-tooltip="Recipe: Heat 1 cup lentil soup and serve with a side salad (2 cups greens, tomatoes, cucumbers).">Lentil soup &amp; salad (~500 cal)</span></li>
+              <li><strong>Snack:</strong> <span class="meal" data-tooltip="Recipe: A handful of mixed nuts (about 30g).">Mixed nuts (~200 cal)</span></li>
+              <li><strong>Dinner:</strong> <span class="meal" data-tooltip="Recipe: Grill 120g chicken; serve with 1 small sweet potato and 1 cup green beans.">Grilled chicken dinner (~600 cal)</span></li>
+            </ul>` 
+          },
+          { day: "Thursday", 
+            workout: `<ul>
+              <li>Active recovery: 30 min yoga or stretching</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> <span class="meal" data-tooltip="Recipe: Toast 1 slice whole grain bread; top with mashed avocado and a poached egg.">Avocado toast (~350 cal)</span></li>
+              <li><strong>Lunch:</strong> <span class="meal" data-tooltip="Recipe: Mix 1 cup quinoa with ½ cup chickpeas, chopped cucumber, tomato, and lemon dressing.">Quinoa salad (~500 cal)</span></li>
+              <li><strong>Snack:</strong> <span class="meal" data-tooltip="Recipe: Prepare a small fruit salad using 1 cup seasonal fruits.">Fruit salad (~150 cal)</span></li>
+              <li><strong>Dinner:</strong> <span class="meal" data-tooltip="Recipe: Bake 150g salmon; serve with ½ cup brown rice and 1 cup steamed broccoli.">Baked salmon dinner (~600 cal)</span></li>
+            </ul>` 
+          },
+          { day: "Friday", 
+            workout: `<ul>
+              <li>Warm-up: 10 min jog</li>
+              <li>Chest Press: 3 sets of 12 reps</li>
+              <li>Leg Press: 3 sets of 15 reps</li>
+              <li>Lat Pulldown: 3 sets of 12 reps</li>
+              <li>Plank: 3 x 1 minute</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> <span class="meal" data-tooltip="Recipe: Combine 1 cup cottage cheese with ½ cup chopped fruit.">Cottage cheese with fruit (~350 cal)</span></li>
+              <li><strong>Lunch:</strong> <span class="meal" data-tooltip="Recipe: Grill 120g fish and serve in soft taco shells with cabbage slaw and lime dressing.">Fish tacos (~500 cal)</span></li>
+              <li><strong>Snack:</strong> <span class="meal" data-tooltip="Recipe: Use one pre-made protein bar (~60g).">Protein bar (~200 cal)</span></li>
+              <li><strong>Dinner:</strong> <span class="meal" data-tooltip="Recipe: Prepare 100g turkey meatballs in marinara sauce; serve over whole wheat pasta.">Turkey meatballs (~600 cal)</span></li>
+            </ul>` 
+          },
+          { day: "Saturday", 
+            workout: `<ul>
+              <li>Rest or light activity: 30 min walk and stretching</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> <span class="meal" data-tooltip="Recipe: Prepare whole grain pancakes; top with fresh fruit and a little maple syrup.">Whole grain pancakes (~350 cal)</span></li>
+              <li><strong>Lunch:</strong> <span class="meal" data-tooltip="Recipe: Fill a whole wheat wrap with mixed veggies, hummus, and sprouts.">Veggie wrap (~500 cal)</span></li>
+              <li><strong>Snack:</strong> <span class="meal" data-tooltip="Recipe: Mix 1 cup low‑fat yogurt with ½ cup berries.">Yogurt with berries (~150 cal)</span></li>
+              <li><strong>Dinner:</strong> <span class="meal" data-tooltip="Recipe: Bake 150g cod; serve with ½ cup brown rice and 1 cup steamed broccoli.">Baked cod dinner (~600 cal)</span></li>
+            </ul>` 
+          },
+          { day: "Sunday", 
+            workout: `<ul>
+              <li>Full body stretching and light yoga for 30 min</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> <span class="meal" data-tooltip="Recipe: Make a smoothie bowl by blending 1 cup mixed berries with ½ cup low‑fat yogurt; top with granola.">Smoothie bowl (~350 cal)</span></li>
+              <li><strong>Lunch:</strong> <span class="meal" data-tooltip="Recipe: Toss 120g chicken with romaine, Parmesan, and a light Caesar dressing.">Chicken Caesar salad (~500 cal)</span></li>
+              <li><strong>Snack:</strong> <span class="meal" data-tooltip="Recipe: Slice 1 bell pepper and serve with 2 tbsp guacamole.">Bell peppers with guacamole (~150 cal)</span></li>
+              <li><strong>Dinner:</strong> <span class="meal" data-tooltip="Recipe: Stir‑fry 100g tofu with 1 cup mixed vegetables and serve with ½ cup quinoa.">Tofu stir‑fry (~600 cal)</span></li>
+            </ul>` 
+          }
+        ];
+      } else if (goalWeight > weightLbs) {
+        // Muscle Gain Plan
+        planType = "muscle gain";
+        recommendedCalories = Math.round(maintenanceCalories + 300);
+        weeklyPlan = [
+          { day: "Monday",
+            workout: `<ul>
+              <li>Warm-up: 10 min light cardio</li>
+              <li>Bench Press: 4 sets of 8-10 reps</li>
+              <li>Incline Dumbbell Press: 3 sets of 10 reps</li>
+              <li>Dumbbell Flyes: 3 sets of 12 reps</li>
+              <li>Tricep Dips: 3 sets of 10-12 reps</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> Protein shake with oats and banana (~500 cal)</li>
+              <li><strong>Lunch:</strong> Grilled chicken with quinoa and steamed vegetables (~600 cal)</li>
+              <li><strong>Snack:</strong> Greek yogurt with nuts (~300 cal)</li>
+              <li><strong>Dinner:</strong> Salmon with sweet potato and broccoli (~600 cal)</li>
+            </ul>`
+          },
+          { day: "Tuesday",
+            workout: `<ul>
+              <li>Warm-up: 10 min brisk walk</li>
+              <li>Squats: 4 sets of 8-10 reps</li>
+              <li>Lunges: 3 sets of 10 reps per leg</li>
+              <li>Leg Press: 3 sets of 10 reps</li>
+              <li>Calf Raises: 3 sets of 15 reps</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> Oatmeal with protein powder and berries (~500 cal)</li>
+              <li><strong>Lunch:</strong> Turkey sandwich on whole grain bread with avocado (~600 cal)</li>
+              <li><strong>Snack:</strong> Protein bar (~300 cal)</li>
+              <li><strong>Dinner:</strong> Beef stir-fry with brown rice (~600 cal)</li>
+            </ul>`
+          },
+          { day: "Wednesday",
+            workout: `<ul>
+              <li>Rest or active recovery: 30 min light cardio &amp; stretching</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> Smoothie with mixed fruits, spinach, and protein powder (~500 cal)</li>
+              <li><strong>Lunch:</strong> Lentil soup with whole grain bread (~600 cal)</li>
+              <li><strong>Snack:</strong> Cottage cheese with pineapple (~300 cal)</li>
+              <li><strong>Dinner:</strong> Grilled chicken with sweet potato and green beans (~600 cal)</li>
+            </ul>`
+          },
+          { day: "Thursday",
+            workout: `<ul>
+              <li>Warm-up: 10 min light cardio</li>
+              <li>Deadlifts: 4 sets of 6-8 reps</li>
+              <li>Barbell Rows: 3 sets of 8-10 reps</li>
+              <li>Lat Pulldowns: 3 sets of 10 reps</li>
+              <li>Bicep Curls: 3 sets of 12 reps</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> Whole grain toast with avocado and scrambled eggs (~500 cal)</li>
+              <li><strong>Lunch:</strong> Quinoa salad with chickpeas and mixed vegetables (~600 cal)</li>
+              <li><strong>Snack:</strong> Mixed nuts and dried fruits (~300 cal)</li>
+              <li><strong>Dinner:</strong> Turkey meatballs with whole wheat pasta (~600 cal)</li>
+            </ul>`
+          },
+          { day: "Friday",
+            workout: `<ul>
+              <li>Warm-up: 10 min light cardio</li>
+              <li>Overhead Press: 3 sets of 10 reps</li>
+              <li>Dumbbell Lateral Raises: 3 sets of 12 reps</li>
+              <li>Face Pulls: 3 sets of 15 reps</li>
+              <li>Core exercises: Planks and Russian twists (3 sets each)</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> Protein pancakes with fresh fruit (~500 cal)</li>
+              <li><strong>Lunch:</strong> Tuna salad with whole grain crackers (~600 cal)</li>
+              <li><strong>Snack:</strong> Smoothie with almond milk and protein powder (~300 cal)</li>
+              <li><strong>Dinner:</strong> Baked cod with quinoa and steamed veggies (~600 cal)</li>
+            </ul>`
+          },
+          { day: "Saturday",
+            workout: `<ul>
+              <li>Rest or active recovery: Light cardio, yoga, or stretching (30-45 min)</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> Omelette with veggies and whole grain toast (~500 cal)</li>
+              <li><strong>Lunch:</strong> Chicken wrap with hummus and mixed greens (~600 cal)</li>
+              <li><strong>Snack:</strong> Fruit salad with a handful of almonds (~300 cal)</li>
+              <li><strong>Dinner:</strong> Stir-fried tofu with brown rice and veggies (~600 cal)</li>
+            </ul>`
+          },
+          { day: "Sunday",
+            workout: `<ul>
+              <li>Rest and recovery: Full body stretching and mobility exercises</li>
+            </ul>`,
+            mealPlan: `<ul>
+              <li><strong>Breakfast:</strong> Smoothie bowl with granola and mixed berries (~500 cal)</li>
+              <li><strong>Lunch:</strong> Veggie burger with sweet potato fries (~600 cal)</li>
+              <li><strong>Snack:</strong> Greek yogurt with honey and nuts (~300 cal)</li>
+              <li><strong>Dinner:</strong> Grilled salmon with wild rice and steamed broccoli (~600 cal)</li>
+            </ul>`
+          }
+        ];
+      } else {
+        // Default to Maintenance if no valid condition is met (should not occur)
+        planType = "maintenance";
+        recommendedCalories = Math.round(maintenanceCalories);
+        weeklyPlan = [];
+      }
+
+      // Adjust meal plan based on preferred diet
+      if (preferredDiet === "Vegetarian") {
+        weeklyPlan.forEach(dayPlan => {
+          dayPlan.mealPlan = dayPlan.mealPlan.replace(/chicken/gi, "tofu")
+                                               .replace(/turkey/gi, "tofu")
+                                               .replace(/beef/gi, "lentils")
+                                               .replace(/salmon/gi, "grilled vegetables")
+                                               .replace(/shrimp/gi, "tempeh")
+                                               .replace(/steak/gi, "grilled portobello mushrooms")
+                                               .replace(/pork/gi, "tofu")
+                                               .replace(/lamb/gi, "tofu");
+        });
+      } else if (preferredDiet === "Vegan") {
+        weeklyPlan.forEach(dayPlan => {
+          dayPlan.mealPlan = dayPlan.mealPlan.replace(/eggs/gi, "tofu scramble")
+                                               .replace(/cheese/gi, "")
+                                               .replace(/yogurt/gi, "plant‑based yogurt")
+                                               .replace(/chicken/gi, "tofu")
+                                               .replace(/turkey/gi, "tofu")
+                                               .replace(/beef/gi, "lentils")
+                                               .replace(/salmon/gi, "grilled vegetables")
+                                               .replace(/shrimp/gi, "tempeh")
+                                               .replace(/steak/gi, "grilled portobello mushrooms")
+                                               .replace(/pork/gi, "tofu")
+                                               .replace(/lamb/gi, "tofu");
+        });
+      } else if (preferredDiet === "Gluten-Free") {
+        weeklyPlan.forEach(dayPlan => {
+          dayPlan.mealPlan = dayPlan.mealPlan.replace(/whole wheat/gi, "gluten‑free");
+        });
+      }
+      // (Additional modifications for other diets such as DASH or Whole30 could be added here.)
+
+      // Build additional guidance messages
+      let additionalGuidance = "";
+      if (healthConcerns.includes("High Blood Pressure")) {
+        additionalGuidance += "<p><em>Note: High blood pressure detected. Please consult with your doctor before engaging in strenuous activities.</em></p>";
+      }
+      if (healthConcerns.includes("Diabetes")) {
+        additionalGuidance += "<p><em>Note: Diabetes is noted. Monitor your blood sugar levels during workouts and meals.</em></p>";
+      }
+      if (stressLevel === "high") {
+        additionalGuidance += "<p><em>Consider incorporating stress management techniques such as meditation or yoga into your routine.</em></p>";
+      }
+      if (exerciseLevel === "beginner") {
+        additionalGuidance += "<p><em>As a beginner, start with moderate intensity workouts and gradually increase your activity to avoid injury.</em></p>";
+      }
+      if (sleepHours < 7) {
+        additionalGuidance += "<p><em>Consider aiming for at least 7-8 hours of sleep per night for optimal recovery.</em></p>";
+      }
+      if (exerciseFrequency === 0) {
+        additionalGuidance += "<p><em>It appears you don't exercise regularly. Incorporating even light activities can significantly benefit your health.</em></p>";
+      }
+
+      // Generate weekly plan HTML table
+      let weeklyPlanHTML = "<h3>Your Detailed Weekly Plan</h3>";
+      weeklyPlanHTML += "<table>";
+      weeklyPlanHTML += "<tr><th>Day</th><th>Workout Plan</th><th>Meal Plan</th></tr>";
+      weeklyPlan.forEach(function(dayPlan) {
+        weeklyPlanHTML += `<tr>
+          <td><strong>${dayPlan.day}</strong></td>
+          <td>${dayPlan.workout}</td>
+          <td>${dayPlan.mealPlan}</td>
+        </tr>`;
+      });
+      weeklyPlanHTML += "</table>";
+
+      // Create final result HTML
+      const resultHTML = `
+        <h2>Your Personalized Status & Guidance</h2>
+        <p><strong>Age:</strong> ${age}</p>
+        <p><strong>Gender:</strong> ${gender}</p>
+        <p><strong>Height:</strong> ${feet}' ${inches}"</p>
+        <p><strong>Current Weight:</strong> ${weightLbs} lbs</p>
+        <p><strong>Goal Weight:</strong> ${goalWeight} lbs</p>
+        <p><strong>BMI:</strong> ${bmiRounded} (${bmiCategory})</p>
+        <p><strong>BMR:</strong> ${Math.round(bmr)} calories/day</p>
+        <p><strong>Daily Calorie Recommendation:</strong> ${recommendedCalories} calories</p>
+        <p><strong>Goal:</strong> ${planType.charAt(0).toUpperCase() + planType.slice(1)}</p>
+        <p><strong>Preferred Diet:</strong> ${preferredDiet}</p>
+        <p><strong>Health Concerns:</strong> ${healthConcerns.length ? healthConcerns.join(", ") : "None"}</p>
+        <hr>
+        <h3>Additional Information</h3>
+        <p><strong>Exercise Frequency:</strong> ${exerciseFrequency} days per week</p>
+        <p><strong>Exercise Level:</strong> ${exerciseLevel}</p>
+        <p><strong>Average Sleep Hours:</strong> ${sleepHours}</p>
+        <p><strong>Stress Level:</strong> ${stressLevel}</p>
+        <p><strong>Medical History:</strong> ${medicalHistory ? medicalHistory : "None"}</p>
+        ${additionalGuidance}
+        ${weeklyPlanHTML}
+      `;
+
+      // Display results
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = resultHTML;
+      resultDiv.style.display = "block";
+    });
+  </script>
+</body>
+</html>
